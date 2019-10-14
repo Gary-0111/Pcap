@@ -1,0 +1,88 @@
+1. pcap读取解析模块
+
+只考虑以太网
+
+typedef struct _pcap_st {
+    pcap_file_header header;    // pcap文件头
+    FILE *fp;                   // pcap文件指针
+} pcap_st;
+
+
+#define MAC_LEN 6
+
+typedef unsigned int __u32;
+typedef unsigned short __u16;
+typedef unsigned char __u8;
+
+// 以太网帧头
+struct MAC_HEAD {
+    __u8 dst_mac[MAC_LEN];
+    __u8 src_mac[MAC_LEN];
+    __u16 protocol;
+};
+
+typedef struct pcap_st *pcap_fp;
+typedef struct MAC_HEAD *mac_frame;
+
+typedef int (*hook_func)(mac_frame);                // 钩子原型
+
+
+/******************* API ********************/
+pcap_fp pcap_open(const char *fname);               // 打开pcap文件
+void    pcap_close(pcap_fp pcap);                   // 关闭pcap文件
+
+mac_frame pcap_next_frame(pcap_fp pcap);              // 读取下一个以太网帧
+
+int pcap_loads(const char *fname, hook_func hook);  // 读取pcap文件遍历每一帧，并对每一帧调用hook处理
+
+
+2. 过滤器
+
+#define LOGICAL_OP_AND              // 逻辑操作符
+#define LOGICAL_OP_OR
+#define LOGICAL_OP_NOT
+
+
+#define EXPRESSION_PROTOCOL         // 过滤协议类型
+#define EXPRESSION_SIP
+#define EXPRESSION_DIP
+#define EXPRESSION_SPORT
+#define EXPRESSION_DPORT
+
+// 过滤条件
+typedef struct expression_st {
+    int expression_type;            // 过滤类型
+    union {                         //
+        __u8 ip[4];
+        __u16 port;
+        __u16 protocol;
+    };
+} expression;
+
+// 过滤器
+typedef struct filter_st {
+    union {
+        int op_type;                    // lchild或rchild不为空时有效（非叶节点）
+        expression exper;               // lchild和rchild为空时有效（叶子）
+    };
+    struct filter_st *lchild, *rchild;  
+}filter;
+
+
+int pcap_for_each(const char *fname, filter *ft, void (*func)(mac_frame))       // 轮询每个制定文件的每个报文，并调用回调函数处理
+
+BOOL match(mac_frame, filter *);        // 判断mac帧是否符合过滤器条件
+
+filter *filter_protocol(int protocol);  // 新建协议过滤器
+filter *filter_src_ip(const char *ip);  // 新建源IP过滤器
+filter *filter_dst_ip(const char *ip);
+filter *filter_src_port(__u16 port);
+filter *filter_dst_port(__u16 port);
+
+filter *filter_add(filter *loperand, filter *roperand);     // 将两个过滤器进行与操作，返回与操作后的过滤器
+filter *filter_or(filter *loperand, filter *roperand);
+filter *filter_not(filter *operand);
+
+void filter_free(filter *);             // 释放过滤器
+
+

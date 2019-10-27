@@ -41,14 +41,7 @@ typedef struct _pcap_file_header {
 #define DLT_RAW     12  /* raw IP */
 #endif
 
-#ifndef IPPROTO_TCP
-#define IPPROTO_TCP 0x6
-#endif
-#ifndef IPPROTO_UDP
-#define IPPROTO_UDP 0x11
-#endif
 
-#define IPPROTO     0x800
 
 /**
  *  PCAP文件中数据包所使用的时间戳
@@ -75,7 +68,11 @@ typedef struct _pcap_st {
 } pcap_st;
 
 
-// 打开pcap文件
+/**
+ * @brief 打开pcap文件
+ * @param fname pcap文件路径
+ * @return 成功则返回pcap指针；失败返回NULL
+ */
 pcap_fp pcap_open(const char *fname) 
 {
     assert(fname);
@@ -105,7 +102,11 @@ pcap_fp pcap_open(const char *fname)
     return (pcap_fp)pcap;
 }
 
-// 关闭pcap文件
+
+/**
+ * @brief 关闭pcap文件
+ * @param pcap pcap指针
+ */
 void pcap_close(pcap_fp pcap) 
 {
     if (pcap) {
@@ -116,7 +117,12 @@ void pcap_close(pcap_fp pcap)
     }
 }
 
-// 读取下一个以太网帧
+
+/**
+ * @brief 读取下一个以太网帧
+ * @param pcap pcap指针
+ * @return 成功则返回下一个mac帧；失败返回NULL
+ */
 mac_frame pcap_next_frame(pcap_fp pcap)
 {
     assert(pcap);
@@ -143,8 +149,14 @@ mac_frame pcap_next_frame(pcap_fp pcap)
     return (mac_frame)data;
 }
 
-// 读取pcap文件遍历每一帧，并对每一帧调用hook处理
-int pcap_loads(const char *fname, hook_func hook)
+/**
+ * @brief 读取pcap文件遍历每一帧，并对每一帧调用hook处理
+ * @param fname pcap文件路径
+ * @param hook  回调函数
+ * @param udata 回调函数的参数
+ * @return 成功返回0；失败返回-1
+ */
+int pcap_parse_all(const char *fname, pcap_callback hook, void *udata)
 {
     assert(fname);
     assert(hook);
@@ -156,8 +168,9 @@ int pcap_loads(const char *fname, hook_func hook)
     
     mac_frame frame = pcap_next_frame(pcap);
     while (frame) {
-        hook(frame);
+        hook(frame, udata);
         frame = pcap_next_frame(pcap);
     }
+    pcap_close(pcap);
     return 0;
 }

@@ -21,17 +21,39 @@ struct MAC_HEAD {
 typedef struct pcap_st *pcap_fp;
 typedef struct MAC_HEAD *mac_frame;
 
-typedef int (*hook_func)(mac_frame);              // 钩子原型
+typedef int (*pcap_callback)(mac_frame, void *udata);              // 钩子原型
 
 
 
 /******************* API ********************/
-pcap_fp pcap_open(const char *fname);               // 打开pcap文件
-void    pcap_close(pcap_fp pcap);                   // 关闭pcap文件
+/**
+ * @brief 打开pcap文件
+ * @param fname pcap文件路径
+ * @return 成功则返回pcap指针；失败返回NULL
+ */
+pcap_fp pcap_open(const char *fname); 
 
-mac_frame pcap_next_frame(pcap_fp pcap);              // 读取下一个pcap帧
+/**
+ * @brief 关闭pcap文件
+ * @param pcap pcap指针
+ */
+void    pcap_close(pcap_fp pcap);
 
-int pcap_loads(const char *fname, hook_func hook);  // 读取pcap文件遍历每一帧，并对每一帧调用hook处理
+/**
+ * @brief 读取下一个以太网帧
+ * @param pcap pcap指针
+ * @return 成功则返回下一个mac帧；失败返回NULL
+ */
+mac_frame pcap_next_frame(pcap_fp pcap);
+
+/**
+ * @brief 读取pcap文件遍历每一帧，并对每一帧调用hook处理
+ * @param fname pcap文件路径
+ * @param hook  回调函数
+ * @param udata 回调函数的参数
+ * @return 成功返回0；失败返回-1
+ */
+int pcap_parse_all(const char *fname, pcap_callback hook, void *udata);
 
 
 

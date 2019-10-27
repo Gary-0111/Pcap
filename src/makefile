@@ -2,9 +2,10 @@ def:
 	gcc -Wall -g -fprofile-arcs -ftest-coverage -c -o pcap.o pcap.c
 	gcc -Wall -g -fprofile-arcs -ftest-coverage -c -o filter.o filter.c
 	gcc -Wall -g -fprofile-arcs -ftest-coverage -c -o demo.o demo.c
+	gcc -Wall -o demo demo.o filter.o pcap.o -lgcov
+
 	gcc -Wall -g -fprofile-arcs -ftest-coverage -c -o test_main.o test_main.c
 	gcc -Wall -g -fprofile-arcs -ftest-coverage -c -o xtest.o xtest.c
-	gcc -Wall -o demo demo.o filter.o pcap.o -lgcov
 	gcc -Wall -o test xtest.o test_main.o pcap.o filter.o -lgcov
 
 clean: 
@@ -18,7 +19,7 @@ test: def
 	./test --fork
 
 check:
-	valgrind --leak-check=full -v ./demo
+	valgrind --leak-check=full -v ./test
 
 lcov:
 	lcov -d ./ -t 'demo' -o 'demo.info' -b . -c
